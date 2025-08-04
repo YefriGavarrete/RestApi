@@ -69,7 +69,6 @@ public class ActivityGet extends AppCompatActivity {
         cargarPersonas();
         actualizarEstadoBtnEliminar();
     }
-
     private void setupClickListeners() {
         btnGetPersonas.setOnClickListener(v -> cargarPersonas());
         btnRefresh.setOnClickListener(v -> {

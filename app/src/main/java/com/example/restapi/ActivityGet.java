@@ -13,6 +13,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
@@ -20,6 +21,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.restapi.config.Personas;
 import com.example.restapi.config.RestApiMethods;
@@ -29,17 +31,22 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ActivityGet extends AppCompatActivity {
 
     private static final String TAG = "ActivityGet";
     private ListView listViewPersonas;
-    private Button btnGetPersonas, btnRefresh;
-    private ProgressBar progressBar;
+    private Button btnGetPersonas, btnRefresh, btnEliminar;
     private PersonasAdapter adapter;
     private List<Personas> personasList;
     private RequestQueue requestQueue;
+
+    // Variables para manejo de selección
+    private Personas personaSeleccionada = null;
+    private int posicionSeleccionada = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,14 +57,17 @@ public class ActivityGet extends AppCompatActivity {
         listViewPersonas = findViewById(R.id.listview_personas);
         btnGetPersonas = findViewById(R.id.btngetPersonas);
         btnRefresh = findViewById(R.id.btnVolver);
-        progressBar = findViewById(R.id.progBar);
+        btnEliminar = findViewById(R.id.btnEliminar);
         personasList = new ArrayList<>();
 
         adapter = new PersonasAdapter(this, personasList);
         listViewPersonas.setAdapter(adapter);
         requestQueue = Volley.newRequestQueue(this);
+        listViewPersonas.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+
         setupClickListeners();
         cargarPersonas();
+        actualizarEstadoBtnEliminar();
     }
 
     private void setupClickListeners() {
@@ -66,42 +76,98 @@ public class ActivityGet extends AppCompatActivity {
             Intent intent = new Intent(ActivityGet.this, ActivityCreate.class);
             startActivity(intent);
         });
-        listViewPersonas.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+        btnEliminar.setOnClickListener(v -> {
+            if (personaSeleccionada != null) {
+                mostrarDialogoConfirmacionEliminacion();
+            } else {
+                Toast.makeText(this, "Selecciona una persona para eliminar", Toast.LENGTH_SHORT).show();
+            }
+        });
+        listViewPersonas.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            private long ultimoClick = 0;
+            private static final long DOUBLE_CLICK_TIME_DELTA = 300; // milliseconds
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                long clickTime = System.currentTimeMillis();
+
+                if (clickTime - ultimoClick < DOUBLE_CLICK_TIME_DELTA) {
+                    Personas persona = personasList.get(position);
+                    abrirActivityUpdate(persona);
+                } else {
+                    // Click simple - seleccionar
+                    seleccionarPersona(position);
+                }
+
+                ultimoClick = clickTime;
+            }
+        });
+
+        listViewPersonas.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 Personas persona = personasList.get(position);
-                Toast.makeText(ActivityGet.this, "Clic en: " + persona.getNombres(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(ActivityGet.this, "Abriendo para editar: " + persona.getNombres(), Toast.LENGTH_SHORT).show();
                 abrirActivityUpdate(persona);
+                return true;
             }
         });
     }
 
-    private void cargarPersonas() {
-        MostrarBarra(true);
-        btnGetPersonas.setEnabled(false);
+    private void seleccionarPersona(int position) {
+        if (posicionSeleccionada != -1) {
+            listViewPersonas.setItemChecked(posicionSeleccionada, false);
+        }
+        posicionSeleccionada = position;
+        personaSeleccionada = personasList.get(position);
+        listViewPersonas.setItemChecked(position, true);
+        Toast.makeText(this, "Seleccionado: " + personaSeleccionada.getNombres() +
+                " (Doble click para editar)", Toast.LENGTH_SHORT).show();
 
-        // AGREGAR LOG PARA DEBUG
-        Log.d(TAG, "=== INICIANDO CARGA DE PERSONAS ===");
-        Log.d(TAG, "URL: " + RestApiMethods.EndpointGetPersons);
+        actualizarEstadoBtnEliminar();
+    }
+
+    private void actualizarEstadoBtnEliminar() {
+        if (btnEliminar != null) {
+            btnEliminar.setEnabled(personaSeleccionada != null);
+            btnEliminar.setText(personaSeleccionada != null ?
+                    "Eliminar " + personaSeleccionada.getNombres() : "Eliminar");
+        }
+    }
+
+    private void mostrarDialogoConfirmacionEliminacion() {
+        if (personaSeleccionada == null) return;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Confirmar eliminación");
+        builder.setMessage("¿Estás seguro de que deseas eliminar a " +
+                personaSeleccionada.getNombres() + " " +
+                personaSeleccionada.getApellidos() + "?");
+
+        builder.setPositiveButton("Eliminar", (dialog, which) -> {
+            EliminarUsuario();
+        });
+        builder.setNegativeButton("Cancelar", (dialog, which) -> {
+            dialog.dismiss();
+        });
+
+        builder.show();
+    }
+
+
+    private void cargarPersonas() {
+        btnGetPersonas.setEnabled(false);
 
         JsonArrayRequest request = new JsonArrayRequest(
                 Request.Method.GET,
                 RestApiMethods.EndpointGetPersons,
                 null,
                 response -> {
-                    Log.d(TAG, "=== RESPUESTA RECIBIDA ===");
-                    Log.d(TAG, "JSON completo: " + response.toString());
-                    Log.d(TAG, "Número de elementos: " + response.length());
-
                     List<Personas> listaDesdeAPI = new ArrayList<>();
                     for (int i = 0; i < response.length(); i++) {
                         try {
                             JSONObject personaJson = response.getJSONObject(i);
                             Log.d(TAG, "Procesando persona " + i + ": " + personaJson.toString());
-
                             Personas persona = new Personas();
-
-                            // Procesar ID de forma MÁS segura
                             try {
                                 if (personaJson.has("id")) {
                                     Object idObj = personaJson.get("id");
@@ -138,10 +204,10 @@ public class ActivityGet extends AppCompatActivity {
                     personasList.clear();
                     personasList.addAll(listaDesdeAPI);
                     adapter.notifyDataSetChanged();
-
-                    MostrarBarra(false);
+                    personaSeleccionada = null;
+                    posicionSeleccionada = -1;
+                    actualizarEstadoBtnEliminar();
                     btnGetPersonas.setEnabled(true);
-
                     Log.d(TAG, "=== CARGA COMPLETADA ===");
                     Log.d(TAG, "Total personas cargadas: " + personasList.size());
                 },
@@ -152,8 +218,6 @@ public class ActivityGet extends AppCompatActivity {
                         Log.e(TAG, "Código HTTP: " + error.networkResponse.statusCode);
                         Log.e(TAG, "Respuesta: " + new String(error.networkResponse.data));
                     }
-
-                    MostrarBarra(false);
                     btnGetPersonas.setEnabled(true);
                     Toast.makeText(ActivityGet.this, "Error cargando personas", Toast.LENGTH_SHORT).show();
                 }
@@ -164,7 +228,6 @@ public class ActivityGet extends AppCompatActivity {
 
     private void abrirActivityUpdate(Personas persona) {
         Intent intent = new Intent(this, ActivityUpdate.class);
-        // ENVIAR COMO STRING
         intent.putExtra("id", persona.getId());
         intent.putExtra("nombres", persona.getNombres());
         intent.putExtra("apellidos", persona.getApellidos());
@@ -172,7 +235,6 @@ public class ActivityGet extends AppCompatActivity {
         intent.putExtra("telefono", persona.getTelefono());
         intent.putExtra("fechanac", persona.getFechanac());
         intent.putExtra("foto", persona.getFoto());
-        Log.d(TAG, "Abriendo ActivityUpdate para persona ID: " + persona.getId());
         startActivity(intent);
     }
 
@@ -184,19 +246,43 @@ public class ActivityGet extends AppCompatActivity {
             cargarPersonas();
         }
     }
-
-    private void MostrarBarra(boolean show) {
-        if (progressBar != null) {
-            progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
-        }
-        listViewPersonas.setVisibility(show ? View.GONE : View.VISIBLE);
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (requestQueue != null) {
             requestQueue.cancelAll(TAG);
         }
+    }
+    public void EliminarUsuario() {
+        if (personaSeleccionada == null || personaSeleccionada.getId() == null || personaSeleccionada.getId().isEmpty()) {
+            Toast.makeText(this, "Selecciona una persona válida para eliminar.", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "No se puede eliminar: personaSeleccionada es nula o no tiene ID.");
+            return;
+        }
+        Log.d(TAG, "eliminar usuario con ID: " + personaSeleccionada.getId());
+        String deleteUrl = RestApiMethods.EndpointDeletePerson + "?id=" + personaSeleccionada.getId();
+        StringRequest request = new StringRequest(
+                Request.Method.DELETE,
+                deleteUrl,
+                response -> {
+                    Toast.makeText(this, "Usuario eliminado correctamente.", Toast.LENGTH_SHORT).show();
+                    personasList.remove(posicionSeleccionada);
+                    adapter.notifyDataSetChanged();
+                    personaSeleccionada = null;
+                    posicionSeleccionada = -1;
+                    actualizarEstadoBtnEliminar();
+                },
+                error -> {
+                    String errorMessage = "Error desconocido";
+                    if (error.networkResponse != null) {
+                        errorMessage = new String(error.networkResponse.data);
+                        Log.e(TAG, "Error del servidor: Código HTTP " + error.networkResponse.statusCode + ", Respuesta: " + errorMessage);
+                    } else {
+                        Log.e(TAG, "Error de Volley: " + error.toString());
+                    }
+                    Toast.makeText(this, "Error eliminando usuario: " + errorMessage, Toast.LENGTH_LONG).show();
+                }
+        );
+        requestQueue.add(request);
     }
 }

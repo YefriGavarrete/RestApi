@@ -97,7 +97,7 @@ public class ActivityCreate extends AppCompatActivity {
         btncreate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SendData();
+                enviarDatos();
             }
         });
 
@@ -106,8 +106,7 @@ public class ActivityCreate extends AppCompatActivity {
             startActivity(intent);
         });
     }
-
-    private void SendData() {
+    private void enviarDatos() {
         requestQueue = Volley.newRequestQueue(this);
         Personas personas = new Personas();
         personas.setNombres(nombres.getText().toString());
@@ -116,12 +115,10 @@ public class ActivityCreate extends AppCompatActivity {
         personas.setFechanac(fechanac.getText().toString());
         personas.setTelefono(telefono.getText().toString());
         Log.d("DEBUG", "URL usada: " + RestApiMethods.EndpointCreatePerson);
-
-
         if (currentPhotoPath != null) {
             personas.setFoto(ConvertImageBase64(currentPhotoPath));
         } else {
-            personas.setFoto(""); // Enviar vacío si no hay imagen
+            personas.setFoto("");
         }
         JSONObject jsonObject = new JSONObject();
         try {
@@ -208,7 +205,6 @@ public class ActivityCreate extends AppCompatActivity {
             try {
                 photoFile = createImageFile();
             } catch (IOException ex) {
-                // Silenciar error
             }
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(this,
@@ -237,7 +233,6 @@ public class ActivityCreate extends AppCompatActivity {
                 File Foto = new File(currentPhotoPath);
                 imageView.setImageURI(Uri.fromFile(Foto));
             } catch (Exception ex) {
-                // Silenciar error
             }
         }
     }

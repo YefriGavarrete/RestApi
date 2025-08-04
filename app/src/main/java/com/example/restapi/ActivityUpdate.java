@@ -75,9 +75,6 @@ public class ActivityUpdate extends AppCompatActivity {
         fechanac = findViewById(R.id.fecha);
         telefono = findViewById(R.id.telefono);
         requestQueue = Volley.newRequestQueue(this);
-
-
-
         fechanac.setOnClickListener(view -> {
             int año = calendario.get(Calendar.YEAR);
             int mes = calendario.get(Calendar.MONTH);
@@ -101,9 +98,6 @@ public class ActivityUpdate extends AppCompatActivity {
                 PermisosCamara();
             }
         });
-
-
-
         btnActualizar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -112,11 +106,6 @@ public class ActivityUpdate extends AppCompatActivity {
                 }
             }
         });
-
-       // btnCancel.setOnClickListener(v -> {
-            //setResult(RESULT_CANCELED);
-            //finish();
-        //});
 
         cargarInformacion();
     }
@@ -158,7 +147,6 @@ public class ActivityUpdate extends AppCompatActivity {
             finish();
         }
     }
-
     private void loadImageFromBase64(String base64String) {
         if (base64String != null && !base64String.isEmpty()) {
             try {
@@ -188,7 +176,6 @@ public class ActivityUpdate extends AppCompatActivity {
             nombres.requestFocus();
             return false;
         }
-
         if (apellidos.getText().toString().trim().isEmpty()) {
             Toast.makeText(this, "Por favor ingresa el apellido", Toast.LENGTH_SHORT).show();
             apellidos.requestFocus();
@@ -200,20 +187,17 @@ public class ActivityUpdate extends AppCompatActivity {
             direccion.requestFocus();
             return false;
         }
-
         if (telefono.getText().toString().trim().isEmpty()) {
             Toast.makeText(this, "Por favor ingresa el teléfono", Toast.LENGTH_SHORT).show();
             telefono.requestFocus();
             return false;
         }
-
         return true;
     }
     private void actualizarPersona() {
         Log.d(TAG, "Iniciando actualización para ID: " + personaId);
         btnActualizar.setEnabled(false);
         btnActualizar.setText("Actualizando...");
-
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", personaId);

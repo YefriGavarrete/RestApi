@@ -59,6 +59,7 @@ public class PersonasAdapter extends BaseAdapter {
             holder.txtNombres = convertView.findViewById(R.id.nombres);
             holder.txtApellidos = convertView.findViewById(R.id.apellidos);
             holder.txtTelefono = convertView.findViewById(R.id.telefono);
+            holder.txtDireccion = convertView.findViewById(R.id.direccion);
             convertView.setTag(holder);
 
             // Verificar que los elementos se encontraron
@@ -66,6 +67,7 @@ public class PersonasAdapter extends BaseAdapter {
             Log.d(TAG, "nombres encontrado: " + (holder.txtNombres != null));
             Log.d(TAG, "apellidos encontrado: " + (holder.txtApellidos != null));
             Log.d(TAG, "telefono encontrado: " + (holder.txtTelefono != null));
+            Log.d(TAG, "direccion encontrada" + (holder.txtDireccion != null));
         } else {
             Log.d(TAG, "Reutilizando vista existente");
             holder = (ViewHolder) convertView.getTag();
@@ -79,6 +81,7 @@ public class PersonasAdapter extends BaseAdapter {
             String nombres = persona.getNombres() != null ? persona.getNombres() : "Sin nombre";
             String apellidos = persona.getApellidos() != null ? persona.getApellidos() : "Sin apellido";
             String telefono = persona.getTelefono() != null ? persona.getTelefono() : "Sin teléfono";
+            String direccion = persona.getDireccion() != null ? persona.getDireccion() : "Sin direccion";
 
             Log.d(TAG, "Asignando nombres: '" + nombres + "'");
             Log.d(TAG, "Asignando apellidos: '" + apellidos + "'");
@@ -87,11 +90,13 @@ public class PersonasAdapter extends BaseAdapter {
             holder.txtNombres.setText(nombres);
             holder.txtApellidos.setText(apellidos);
             holder.txtTelefono.setText(telefono);
+            holder.txtDireccion.setText(direccion);
 
-            // Hacer textos visibles por si acaso
+
             holder.txtNombres.setVisibility(View.VISIBLE);
             holder.txtApellidos.setVisibility(View.VISIBLE);
             holder.txtTelefono.setVisibility(View.VISIBLE);
+            holder.txtDireccion.setVisibility(View.VISIBLE);
 
             // Manejar imagen con más debug
             String fotoBase64 = persona.getFoto();
@@ -130,16 +135,16 @@ public class PersonasAdapter extends BaseAdapter {
             holder.txtNombres.setText("ERROR");
             holder.txtApellidos.setText("ERROR");
             holder.txtTelefono.setText("ERROR");
+            holder.txtDireccion.setText("ERROR");
             holder.imageViewFoto.setImageResource(android.R.drawable.ic_menu_camera);
         }
-
         Log.d(TAG, "=== Fin getView para posición: " + position + " ===");
         return convertView;
     }
 
     static class ViewHolder {
         ImageView imageViewFoto;
-        TextView txtNombres, txtApellidos, txtTelefono;
+        TextView txtNombres, txtApellidos, txtTelefono, txtDireccion;
     }
 
     public void updateList(List<Personas> newList) {

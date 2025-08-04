@@ -47,6 +47,14 @@
             android:textSize="14sp"
             android:textColor="#0066CC"
             android:layout_marginTop="4dp" />
+        <TextView
+            android:id="@+id/direccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Direccion"
+            android:textSize="14sp"
+            android:textColor="#0066CC"
+            android:layout_marginTop="4dp" />
 
     </LinearLayout>
 
